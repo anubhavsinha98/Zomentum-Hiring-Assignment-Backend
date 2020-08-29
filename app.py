@@ -58,9 +58,32 @@ def get_tickets():
     result = tickets_schema.dump(all_tickets)
     return jsonify(result)
 
-@app.route('/tickets/<id>', methods=['GET'])
+@app.route('/ticket/<id>', methods=['GET'])
 def get_ticket_from_id(id):
     ticket = Ticket.query.get(id)
+    return ticket_schema.jsonify(ticket)
+
+@app.route('/tickets/<timings>', methods=['GET'])
+def get_tickets_from_timing(timings):
+    timings = datetime.datetime.strptime(timings, '%H:%M')
+    tickets = Ticket.query.filter_by(timings=timings).all()
+    result = tickets_schema.dump(tickets)
+    return jsonify(result)
+
+@app.route('/ticket/<id>', methods=['PUT'])
+def update_ticket(id):
+    ticket = Ticket.query.get(id)
+    ticket.timings = datetime.datetime.strptime(request.json['timings'], '%H:%M')
+    db.session.commit()
+
+    return ticket_schema.jsonify(ticket)
+
+@app.route('/ticket/<id>', methods=['DELETE'])
+def delete_ticket(id):
+    ticket = Ticket.query.get(id)
+    db.session.delete(ticket)
+    db.session.commit()
+
     return ticket_schema.jsonify(ticket)
 
 if __name__ == "__main__":
