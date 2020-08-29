@@ -1,7 +1,9 @@
+from apscheduler.schedulers.background import BackgroundScheduler
 from flask import Flask,request, jsonify
-from flask_sqlalchemy import SQLAlchemy 
 from flask_marshmallow import Marshmallow
+from flask_sqlalchemy import SQLAlchemy 
 from hashlib import sha1
+import atexit
 import datetime
 import os
 
@@ -16,6 +18,9 @@ app.config['SQLALCHEMY_TRACK_MODIFICATIONS'] = False
 
 db = SQLAlchemy(app)
 ma = Marshmallow(app)
+
+scheduler = BackgroundScheduler()
+
 
 class Ticket(db.Model):
     id = db.Column(db.String(200), primary_key=True)
@@ -129,5 +134,15 @@ def delete_ticket(id):
 
     return ticket_schema.jsonify(ticket)
 
+def delete_expired_ticket():
+    all_tickets = Ticket.query.all()
+    for ticket in all_tickets:
+        if (datetime.datetime.now() - ticket.timings) >= datetime.timedelta(hours=8):
+            db.session.delete(ticket)
+    db.session.commit()
+
 if __name__ == "__main__":
-    app.run(debug=True)
+    scheduler.add_job(func=delete_expired_ticket, trigger='interval', seconds=7200)
+    scheduler.start()
+    app.run(debug=True, use_reloader=False)
+    atexit.register(lambda: scheduler.shutdown())
