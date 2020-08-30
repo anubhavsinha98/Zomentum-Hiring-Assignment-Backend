@@ -14,9 +14,9 @@ Features of the API -
 
 Technologies Used - Flask, SQLAlchemy, Marshmallow, APScheduler
 
-To run the API - ```python app.py```
+To run the API - ```python3 app.py```
 
-To run the test - ```python test.py```
+To run the test - ```python3 test.py```
 
 This API code is released under [GNU General Public License v3.0](https://github.com/anubhavsinha98/Zomentum-Hiring-Assignment-Backend/blob/master/LICENSE)
 
