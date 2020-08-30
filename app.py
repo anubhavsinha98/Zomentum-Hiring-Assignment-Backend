@@ -7,6 +7,7 @@ import atexit
 import datetime
 import os
 
+# Maximum number of tickets that can be booked for a particular show timings
 MAX_TICKET_LIMIT = 20
 
 app = Flask(__name__)
@@ -61,6 +62,16 @@ tickets_schema = TicketSchema(many=True)
 ticket_count_schema = TicketCountSchema()
 
 def get_ticket_count_from_timings(timings):
+    """Returns the count of the tickets booked according to the timings
+
+    Args:
+        timings: Python datetime object. The timings for which we want the count
+            of tickets booked.
+        
+    Returns:
+        count: int. The number of tickets booked for the particular timings.
+    """
+
     ticket = TicketCount.query.filter_by(timings=timings).all()
     if not ticket:
         return 0
@@ -68,6 +79,13 @@ def get_ticket_count_from_timings(timings):
         return ticket[0].count
 
 def update_ticket_count_from_timings(timings, param):
+    """Update the booked tickets count, if the ticket is deleted or booked.
+
+    Args:
+        timings: Python datetime object. The timings for the show.
+        param: str('+'|'-'). Used to decide the update of the count. 
+    """
+
     ticket = TicketCount.query.filter_by(timings=timings).all()
     if param == '+':
         if not ticket:
@@ -80,6 +98,8 @@ def update_ticket_count_from_timings(timings, param):
 
 @app.route('/book', methods=['POST'])
 def book_ticket():
+    """Book tickets, with user_name, timings and phone number."""
+
     user_name = request.json['user_name']
     timings = datetime.datetime.strptime(request.json['timings'], '%H:%M')
     phone_no =  request.json['phone_no']
@@ -99,17 +119,23 @@ def book_ticket():
 
 @app.route('/tickets', methods=['GET'])
 def get_tickets():
+    """Get all the tickets booked."""
+
     all_tickets = Ticket.query.all()
     result = tickets_schema.dump(all_tickets)
     return jsonify(result)
 
 @app.route('/ticket/<id>', methods=['GET'])
 def get_ticket_from_id(id):
+    """Get ticket details from id."""
+
     ticket = Ticket.query.get(id)
     return ticket_schema.jsonify(ticket)
 
 @app.route('/tickets/<timings>', methods=['GET'])
 def get_tickets_from_timing(timings):
+    """Get all the tickets booked at a particular time."""
+    
     timings = datetime.datetime.strptime(timings, '%H:%M')
     tickets = Ticket.query.filter_by(timings=timings).all()
     result = tickets_schema.dump(tickets)
@@ -117,6 +143,8 @@ def get_tickets_from_timing(timings):
 
 @app.route('/ticket/<id>', methods=['PUT'])
 def update_ticket(id):
+    """Update the timings of the ticket."""
+
     ticket = Ticket.query.get(id)
     update_ticket_count_from_timings(ticket.timings, '-')
     ticket.timings = datetime.datetime.strptime(request.json['timings'], '%H:%M')
@@ -127,6 +155,8 @@ def update_ticket(id):
 
 @app.route('/ticket/<id>', methods=['DELETE'])
 def delete_ticket(id):
+    """Delete the ticket entry."""
+
     ticket = Ticket.query.get(id)
     update_ticket_count_from_timings(ticket.timings, '-')
     db.session.delete(ticket)
@@ -135,6 +165,8 @@ def delete_ticket(id):
     return ticket_schema.jsonify(ticket)
 
 def delete_expired_ticket():
+    """A scheduler job which runs after every 2 hours, and remove the expired tickets from the database."""
+
     all_tickets = Ticket.query.all()
     for ticket in all_tickets:
         if (datetime.datetime.now() - ticket.timings) >= datetime.timedelta(hours=8):
@@ -142,6 +174,7 @@ def delete_expired_ticket():
     db.session.commit()
 
 if __name__ == "__main__":
+    # Added the scheduler job, which will execute after every 7200 seconds i.e. 2 hours.
     scheduler.add_job(func=delete_expired_ticket, trigger='interval', seconds=7200)
     scheduler.start()
     app.run(debug=True, use_reloader=False)
