@@ -18,6 +18,8 @@ To run the API - ```python3 app.py```
 
 To run the test - ```python3 test.py```
 
+Requirements file to be added.
+
 This API code is released under [GNU General Public License v3.0](https://github.com/anubhavsinha98/Zomentum-Hiring-Assignment-Backend/blob/master/LICENSE)
 
 
